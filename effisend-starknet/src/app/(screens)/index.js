@@ -2,9 +2,9 @@
 import { useNavigation } from "expo-router";
 import { useContext, useEffect } from "react";
 import { Image, View } from "react-native";
-import logoSplash from "../assets/images/splash-iconC.png";
-import GlobalStyles from "../core/styles";
-import ContextModule from "../providers/contextModule";
+import logoSplash from "../../assets/images/splash-iconC.png";
+import GlobalStyles from "../../core/styles";
+import ContextModule from "../../providers/contextModule";
 
 export default function SplashLoading() {
   const context = useContext(ContextModule);

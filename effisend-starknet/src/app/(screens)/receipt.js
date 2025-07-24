@@ -1,16 +1,16 @@
 import { useGlobalSearchParams, useLocalSearchParams } from "expo-router";
-import { logo } from "../assets/images/logo";
+import { logo } from "../../assets/images/logo";
 import {
   deleteLeadingZeros,
   formatInputText,
   normalizeFontSize,
-} from "../core/utils";
+} from "../../core/utils";
 import { Fragment } from "react";
 import { StyleSheet, Text } from "react-native";
 import { View } from "react-native-web";
 import { Image } from "expo-image";
 import QRCode from "react-native-qrcode-svg";
-import { blockchains } from "../core/constants";
+import { blockchains } from "../../core/constants";
 
 export default function Receipt() {
   const glob = useGlobalSearchParams();

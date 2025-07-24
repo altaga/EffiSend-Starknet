@@ -32,6 +32,7 @@ export default function RootLayout() {
           }
           <ContextLoader />
           <Stack
+            initialRouteName="(screens)/index"
             screenOptions={{
               animation: "simple_push",
               headerShown: false,
@@ -40,7 +41,7 @@ export default function RootLayout() {
             {
               // Splash Loading Screen
             }
-            <Stack.Screen name="index" />
+            <Stack.Screen name="(screens)/index" />
             {
               // Setup Screen
             }
@@ -52,7 +53,7 @@ export default function RootLayout() {
             {
               // Receipt Screen
             }
-            <Stack.Screen name="receipt" />
+            <Stack.Screen name="(screens)/receipt" />
           </Stack>
           <StatusBar style="auto" />
         </ContextProvider>
