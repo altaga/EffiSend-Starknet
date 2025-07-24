@@ -29,7 +29,7 @@ EffiSend is built entirely from scratch to leverage the most advanced web3 infra
   - [**Starknet**](https://starknet.io/)
     Serves as the main blockchain powering EffiSend transactions and rewards distribution. This ZK-Rollup offers massive scalability and low fees, making it ideal for scalable token transfers and automated operations tied to STRK.
 
-  - [**Lanchain (AI Agent)**](https://lanchain.com/)
+  - [**Langchain (AI Agent)**](https://lanchain.com/)
     This framework enables us to create our agent system and its interaction with the user through DeSmond. It allows EffiSend to facilitate Straknet native transfers, perform an off-ramp to our MetaMask card.
 
   - [**DeepFace**](https://viso.ai/computer-vision/deepface/)
