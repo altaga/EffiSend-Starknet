@@ -138,7 +138,7 @@ As seen in the provided code snippets, Starknet plays a direct and critical role
 
 EffiSend enables seamless payments via facial recognition by linking a user’s unique biometric profile to their wallets.
 
-<img src="./Images/pay1.jpg" width="32%"> <img src="./Images/pay2.jpg" width="32%"> <img src="./Images/pay3.jpg" width="32%">
+<img src="./Images/pay1.png" width="32%"> <img src="./Images/pay2.png" width="32%"> <img src="./Images/pay3.png" width="32%">
 
   - The primary function is to create a new user or locate an existing one. This process is dedicated solely to validation, ensuring that the system remains secure and isolated from other services.
 
