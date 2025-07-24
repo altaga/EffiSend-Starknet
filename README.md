@@ -43,7 +43,7 @@ A key component of our application is the utilization of STRK as the primary tok
 
 For the use case of payments, STRK offers a convenient way to make blockchain-based payments in Mexican pesos, as it is the primary token on Starknet and performing operations is relatively straightforward.
 
-<img src="./Images/pay4.jpg" width="32%"> <img src="./Images/pay5.jpg" width="32%"> <img src="./Images/pay6.jpg" width="32%">
+<img src="./Images/pay4.png" width="32%"> <img src="./Images/pay5.png" width="32%"> <img src="./Images/pay6.png" width="32%">
 
   - Crypto Payment Main Code.
 
