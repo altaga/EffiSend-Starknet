@@ -18,6 +18,8 @@ async function getRewards(body) {
 
 export async function POST(request) {
   const body = await request.json();
-  const result  = await getRewards(body);
+  console.log(body)
+  const result = await getRewards(body);
+  console.log(result);
   return Response.json({ ...result });
 }

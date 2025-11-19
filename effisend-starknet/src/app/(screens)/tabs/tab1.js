@@ -52,7 +52,7 @@ class Tab1 extends Component {
   constructor(props) {
     super(props);
     this.state = baseTab1State;
-    this.provider = blockchains.map((x) => setupProvider(x.rpc));
+    this.provider = blockchains.map((x) => setupProvider(process.env.EXPO_PUBLIC_RPC));
     this.EventEmitter = new NativeEventEmitter();
     this.controller = new AbortController();
   }
@@ -164,6 +164,7 @@ class Tab1 extends Component {
           )
       )
     );
+    console.log(tokenBalances);
     const balances = blockchains.map((x, i) =>
       x.tokens.map((y, j) => {
         return formatUnits(tokenBalances[i][j], y.decimals);

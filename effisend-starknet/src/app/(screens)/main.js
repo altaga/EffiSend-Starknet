@@ -26,7 +26,7 @@ export default function MainComponent() {
   useEffect(() => {
     const update = async () => {
       if (!context.value.starter) {
-        navigation.navigate("index");
+        navigation.navigate("(screens)/index");
       } else if (context.value.address === "") {
         navigation.navigate("(screens)/create");
       }

@@ -24,5 +24,6 @@ async function fetchFaceID(body) {
 export async function POST(request) {
   const body = await request.json();
   const { result } = await fetchFaceID(body);
+  console.log(result);
   return Response.json({ result });
 }

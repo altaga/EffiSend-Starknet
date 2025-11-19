@@ -5,6 +5,7 @@ import STRK from "../assets/logos/strk.png";
 import DAI from "../assets/logos/dai.png";
 import USDC from "../assets/logos/usdc.png";
 import USDT from "../assets/logos/usdt.png";
+import WBTC from "../assets/logos/wbtc.png";
 
 const normalizeFontSize = (size) => {
   let { width, height } = Dimensions.get("window");
@@ -33,13 +34,16 @@ export const iconsBlockchain = {
   usdt: (
     <Image source={USDT} style={{ width: w, height: h, borderRadius: 10 }} />
   ),
+  wbtc: (
+    <Image source={WBTC} style={{ width: w, height: h, borderRadius: 10 }} />
+  ),
 };
 
 export const blockchains = [
   {
     network: "Starknet",
     blockExplorer: "https://voyager.online/",
-    rpc: "https://starknet-mainnet.public.blastapi.io",
+    rpc: "https://starknet-rpc.publicnode.com",
     ozAccountClassHash:
       "0x0540d7f5ec7ecf317e68d48564934cb99259781b1ee3cedbbc37ec5337f8e688",
     batchBalancesAddress: "0xcf4902BC621E97B8d574f1E91c342f0c44C8baE5",
@@ -66,14 +70,14 @@ export const blockchains = [
         coingecko: "starknet",
       },
       {
-        name: "DAI",
-        color: "#fab932",
-        symbol: "DAI",
+        name: "Wrapped Bitcoin",
+        color: "#FAB932",
+        symbol: "WBTC",
         address:
-          "0x00dA114221cb83fa859DBdb4C44bEeaa0BB37C7537ad5ae66Fe5e0efD20E6eB3",
-        decimals: 18,
-        icon: iconsBlockchain.dai,
-        coingecko: "dai",
+          "0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
+        decimals: 8,
+        icon: iconsBlockchain.wbtc,
+        coingecko: "wrapped-bitcoin",
       },
       {
         name: "USD Coin",
@@ -94,6 +98,26 @@ export const blockchains = [
         decimals: 6,
         icon: iconsBlockchain.usdt,
         coingecko: "tether",
+      },
+      {
+        name: "Dai Stablecoin v0",
+        color: "#fab932",
+        symbol: "DAIv0",
+        address:
+          "0x00dA114221cb83fa859DBdb4C44bEeaa0BB37C7537ad5ae66Fe5e0efD20E6eB3",
+        decimals: 18,
+        icon: iconsBlockchain.dai,
+        coingecko: "dai",
+      },
+      {
+        name: "Dai Stablecoin",
+        color: "#fab932",
+        symbol: "DAI",
+        address:
+          "0x05574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad",
+        decimals: 18,
+        icon: iconsBlockchain.dai,
+        coingecko: "dai",
       },
     ],
   },

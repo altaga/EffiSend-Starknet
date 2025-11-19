@@ -95,7 +95,7 @@ class Tab2 extends Component {
   constructor(props) {
     super(props);
     this.state = BaseStateTab2;
-    this.provider = blockchains.map((x) => setupProvider(x.rpc));
+    this.provider = blockchains.map((x) => setupProvider(process.env.EXPO_PUBLIC_RPC));
     this.controller = new AbortController();
     this.svg = null;
   }

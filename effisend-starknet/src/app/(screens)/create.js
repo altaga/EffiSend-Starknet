@@ -1,22 +1,19 @@
 import { randomBytes, uuidV4 } from "ethers";
 import {
-  useFocusEffect,
-  useLocalSearchParams,
-  useNavigation,
-  usePathname,
+  useNavigation
 } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Toast } from "toastify-react-native";
 import CamFace from "../../components/camFace";
-import GlobalStyles, { secondaryColor } from "../../core/styles";
+import GlobalStyles, { mainColor, secondaryColor } from "../../core/styles";
 import { useStateAsync } from "../../core/useAsyncState";
 import {
   setAsyncStorageValue,
   setEncryptedStorageValue,
 } from "../../core/utils";
 import ContextModule from "../../providers/contextModule";
-import { Toast } from "toastify-react-native";
 
 export default function createOrRecover() {
   const [loading, setLoading] = useState(false);
@@ -27,7 +24,7 @@ export default function createOrRecover() {
   useEffect(() => {
     const update = async () => {
       if (!context.value.starter) {
-        navigation.navigate("index");
+        navigation.navigate("(screens)/index");
       } else if (context.value.address !== "") {
         navigation.navigate("(screens)/main");
       }
@@ -135,7 +132,7 @@ export default function createOrRecover() {
           style={{
             height: "auto",
             width: "90%",
-            borderColor: secondaryColor,
+            borderColor: loading ? mainColor : secondaryColor,
             borderWidth: 5,
             borderRadius: 10,
             aspectRatio: 1,

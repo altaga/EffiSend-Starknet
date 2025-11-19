@@ -61,7 +61,7 @@ export default function Tab3() {
   const [trustScore, setTrustScore] = React.useState(0);
   const [rewardPoints, setRewardPoints] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
-  const provider = setupProvider(blockchains[0].rpc);
+  const provider = setupProvider(process.env.EXPO_PUBLIC_RPC);
   const contract = new Contract(
     abiERC20,
     "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D",
@@ -126,9 +126,13 @@ export default function Tab3() {
   const handleRewardPoints = async () => {
     setLoading(true);
     const { res } = await getRewards();
-    await provider.waitForTransaction(res.hash);
-    await getAllocatedRewards();
-    setLoading(false);
+    if (res.error === "BAD REQUEST") {
+      setLoading(false);
+    } else {
+      await provider.waitForTransaction(res.hash);
+      await getAllocatedRewards();
+      setLoading(false);
+    }
   };
   return (
     <Fragment>
