@@ -1,6 +1,7 @@
 import { Component } from 'react';
-import QRCodeStyled from 'react-native-qrcode-styled';
+import QRCode from 'react-native-qrcode-svg';
 import { normalizeFontSize } from '../core/utils';
+import { Dimensions, View } from 'react-native';
 
 export default class QrAddress extends Component {
   constructor(props) {
@@ -15,21 +16,13 @@ export default class QrAddress extends Component {
   }
   render() {
     return (
-      <QRCodeStyled
-        data={this.props.address}
-        style={[
-          {
-            backgroundColor: 'white',
-            borderRadius: 10,
-          },
-        ]}
-        errorCorrectionLevel="H"
-        padding={16}
-        pieceSize={normalizeFontSize(7)}
-        pieceBorderRadius={4}
-        isPiecesGlued
-        color={'black'}
+      <View style={{backgroundColor:"white", alignItems:"center", justifyContent:"center", padding:20, borderRadius:10}}>
+      <QRCode
+        value={this.props.address}
+        size={Dimensions.get("screen").width * 0.65}
+        ecl='H'
       />
+      </View>
     );
   }
 }

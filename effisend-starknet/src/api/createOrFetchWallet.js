@@ -1,9 +1,9 @@
 import { fetch } from "expo/fetch";
 
-async function executePayment(jsonBody) {
+async function createOrFetchWallet(body) {
   const myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
-  const raw = JSON.stringify(jsonBody);
+  const raw = JSON.stringify(body);
   const requestOptions = {
     method: "POST",
     headers: myHeaders,
@@ -11,15 +11,11 @@ async function executePayment(jsonBody) {
     redirect: "follow",
   };
   return new Promise((resolve) => {
-    fetch(`${process.env.EXECUTE_PAYMENT_API}`, requestOptions)
+    fetch(`${process.env.EXPO_PUBLIC_CREATE_OR_FETCH_WALLET_API}`, requestOptions)
       .then((response) => response.json())
       .then((result) => resolve(result))
       .catch(() => resolve(null));
   });
 }
 
-export async function POST(request) {
-  const body = await request.json();
-  const {res, error} = await executePayment(body);
-  return Response.json({res, error});
-}
+export { createOrFetchWallet };

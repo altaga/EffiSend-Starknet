@@ -2,7 +2,8 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useNavigation } from "expo-router";
 import { useContext, useEffect, useState } from "react";
-import { Image, Pressable, SafeAreaView, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AgentB from "../../assets/images/agentB.png";
 import AgentW from "../../assets/images/agentW.png";
 import Header from "../../components/header";
@@ -34,22 +35,28 @@ export default function MainComponent() {
     context.value.starter && update();
   }, [context.value.address, context.value.starter, navigation.navigate]);
 
+  const insets = useSafeAreaInsets();
+
   const handleTabPress = (tabIndex) => {
     setTab(tabIndex);
   };
 
   return (
-    <SafeAreaView style={[GlobalStyles.container]}>
+    <View
+      style={{
+        ...GlobalStyles.container,
+        paddingTop: insets.top,
+        paddingLeft: insets.left,
+        paddingBottom: insets.bottom,
+        paddingRight: insets.right,
+      }}
+    >
       <Header />
       <View style={[GlobalStyles.main]}>
         {tab === 0 && <Tab1 navigation={navigation} />}
         {tab === 1 && <Tab2 navigation={navigation} />}
-        {
-          tab === 2 && <Tab3 navigation={navigation} />
-        }
-        {
-          tab === 3 && <Tab4 navigation={navigation} />
-        }
+        {tab === 2 && <Tab3 navigation={navigation} />}
+        {tab === 3 && <Tab4 navigation={navigation} />}
         {
           //tab === 4 && <Tab5 navigation={navigation} />
         }
@@ -132,6 +139,6 @@ export default function MainComponent() {
           </Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

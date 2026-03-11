@@ -1,32 +1,33 @@
 import Clipboard from "@react-native-clipboard/clipboard";
-import { formatUnits, randomBytes, uuidV4 } from "ethers";
+import { formatUnits, uuidV4 } from "ethers";
 import { LinearGradient } from "expo-linear-gradient";
 import { fetch } from "expo/fetch";
 import { Component, Fragment } from "react";
 import {
   Keyboard,
   NativeEventEmitter,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
   ToastAndroid,
-  View,
+  View
 } from "react-native";
 import IconIonicons from "react-native-vector-icons/Ionicons";
 import { Contract } from "starknet";
-import { Toast } from "toastify-react-native";
+import { createPayment } from "../../../api/createPayment";
 import QrAddress from "../../../components/qrAddress";
 import { abiERC20 } from "../../../contracts/erc20";
 import { blockchains, refreshTime } from "../../../core/constants";
 import GlobalStyles, { mainColor } from "../../../core/styles";
 import {
   arraySum,
+  completeStarknetAddress,
   epsilonRound,
   getAsyncStorageValue,
   getEncryptedStorageValue,
   normalizeFontSize,
+  randomBytes,
   setAsyncStorageValue,
   setChains,
   setTokens,
@@ -43,7 +44,7 @@ const baseTab1State = {
   loading: false,
   take: false,
   keyboardHeight: 0,
-  selector: 0,
+  selector: 0, // 0
   qrData: "",
   cameraDelayLoading: false, // Force the camera to load when component is mounted and helps UX
 };
@@ -52,7 +53,7 @@ class Tab1 extends Component {
   constructor(props) {
     super(props);
     this.state = baseTab1State;
-    this.provider = blockchains.map((x) => setupProvider(process.env.EXPO_PUBLIC_RPC));
+    this.provider = blockchains.map((x) => setupProvider(x.rpc));
     this.EventEmitter = new NativeEventEmitter();
     this.controller = new AbortController();
   }
@@ -89,8 +90,8 @@ class Tab1 extends Component {
         } else {
           console.log(
             `Next refresh Available: ${Math.round(
-              (refreshTime - (Date.now() - lastRefresh)) / 1000
-            )} Seconds`
+              (refreshTime - (Date.now() - lastRefresh)) / 1000,
+            )} Seconds`,
           );
         }
       }
@@ -116,7 +117,7 @@ class Tab1 extends Component {
     };
     const response = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${array.toString()}&vs_currencies=usd`,
-      requestOptions
+      requestOptions,
     );
     const result = await response.json();
     const usdConversionTemp = array.map((x) => result[x].usd);
@@ -125,7 +126,7 @@ class Tab1 extends Component {
       blockchain.tokens.map(() => {
         acc++;
         return usdConversionTemp[acc - 1];
-      })
+      }),
     );
     setAsyncStorageValue({ usdConversion });
     this.context.setValue({ usdConversion });
@@ -143,75 +144,64 @@ class Tab1 extends Component {
 
   async getBalance() {
     const balances = await this.getBatchBalances();
-    setAsyncStorageValue({ balances });
+    await setAsyncStorageValue({ balances });
     this.context.setValue({ balances });
   }
 
   async getBatchBalances() {
     const tokensArrays = blockchains.map((blockchain) =>
-      blockchain.tokens.map((y) => y.address)
+      blockchain.tokens.map((y) => y.address),
     );
     const tokenContracts = tokensArrays.map((tokens, i) =>
-      tokens.map((token) => new Contract(abiERC20, token, this.provider[i]))
+      tokens.map((token) => new Contract(abiERC20, token, this.provider[i])),
     );
     const tokenBalances = await Promise.all(
       tokenContracts.map(
         async (tokens) =>
           await Promise.all(
             tokens.map(
-              (contract) => contract.balanceOf(this.context.value.address) ?? 0n
-            )
-          )
-      )
+              (contract) =>
+                contract.balanceOf(this.context.value.address) ?? 0n,
+            ),
+          ),
+      ),
     );
-    console.log(tokenBalances);
     const balances = blockchains.map((x, i) =>
       x.tokens.map((y, j) => {
         return formatUnits(tokenBalances[i][j], y.decimals);
-      })
+      }),
     );
     return balances;
   }
 
-  async createPayment(tempNonce) {
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    const tempUser = await getEncryptedStorageValue("user");
-    const raw = JSON.stringify({
-      nonce: tempNonce,
-      user: tempUser,
-    });
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-    return new Promise((resolve) => {
-      fetch(`/api/createPayment`, requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result.result))
-        .catch(() => resolve(null));
-    });
-  }
-
   async createQR() {
-    this.setState({
-      loading: true,
-    });
-    const bytes = randomBytes(16);
-    const noncePayment = uuidV4(bytes);
-    const { res } = await this.createPayment(noncePayment);
-    if (res === "BAD REQUEST") {
-      await this.setStateAsync({
+    try {
+      this.setState({
+        loading: true,
+      });
+      const bytes = await randomBytes(16);
+      const nonce = uuidV4(bytes);
+      const user = await getEncryptedStorageValue("user");
+      const { res } = await createPayment({
+        nonce,
+        user,
+      });
+      if (res === "BAD REQUEST") {
+        await this.setStateAsync({
+          loading: false,
+        });
+        return;
+      }
+      this.setState({
+        loading: false,
+        qrData: nonce,
+      });
+    } catch (err) {
+      this.setState({
         loading: false,
       });
-      return;
+      console.log(err);
     }
-    this.setState({
-      loading: false,
-      qrData: noncePayment,
-    });
   }
 
   // Utils
@@ -221,31 +211,8 @@ class Tab1 extends Component {
         {
           ...value,
         },
-        () => resolve()
+        () => resolve(),
       );
-    });
-  }
-
-  async encryptData(data) {
-    return new Promise((resolve, reject) => {
-      const myHeaders = new Headers();
-      myHeaders.append("Content-Type", "application/json");
-
-      const raw = JSON.stringify({
-        data,
-      });
-
-      const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow",
-      };
-
-      fetch(`/api/encrypt`, requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result))
-        .catch((error) => console.error(error));
     });
   }
 
@@ -254,7 +221,7 @@ class Tab1 extends Component {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          this.context.value.address !== "" && (
+          this.context.value.address !== "" && this.state.selector === 0 ? (
             <RefreshControl
               progressBackgroundColor={mainColor}
               refreshing={this.state.refreshing}
@@ -265,98 +232,117 @@ class Tab1 extends Component {
                 await this.refresh();
               }}
             />
-          )
+          ) : null
         }
         style={[GlobalStyles.scrollContainer]}
         contentContainerStyle={[
           GlobalStyles.scrollContainerContent,
-          { width: "90%", alignSelf: "center" },
+          {
+            width: "100%",
+            minHeight: "100%",
+            justifyContent: "flex-start",
+            alignItems: "center",
+          },
         ]}
       >
-        <LinearGradient
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            width: "110%",
-            marginTop: 20,
-          }}
-          colors={["#000000", "#010101", "#1a1a1a", "#010101", "#000000"]}
-        >
-          <Text style={[GlobalStyles.title]}>FaceID Balance</Text>
-          <Text style={[GlobalStyles.balance]}>
-            {`$ ${epsilonRound(
-              arraySum(
-                this.context.value.balances
-                  .map((blockchain, i) =>
-                    blockchain.map(
-                      (token, j) =>
-                        token * this.context.value.usdConversion[i][j]
-                    )
-                  )
-                  .flat()
-              ),
-              2
-            )} USD`}
-          </Text>
-        </LinearGradient>
         <View
           style={{
-            flexDirection: "row",
-            width: "100%",
-            justifyContent: "space-around",
+            width: "90%",
             alignItems: "center",
-            marginTop: 20,
-            marginBottom: 10,
+            alignSelf: "center",
+            gap: 20,
+            height: "auto",
           }}
         >
-          <Pressable
-            disabled={this.state.loading}
-            style={[
-              GlobalStyles.buttonSelectorSelectedStyle,
-              this.state.selector !== 0 && {
-                borderColor: "#aaaaaa",
-              },
-            ]}
-            onPress={async () => {
-              this.setState({ selector: 0 });
+          <LinearGradient
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              width: "110%",
+              marginTop: 20,
+            }}
+            colors={["#000000", "#010101", "#1a1a1a", "#010101", "#000000"]}
+          >
+            <Text style={[GlobalStyles.title]}>FaceID Balance</Text>
+            <Text style={[GlobalStyles.balance]}>
+              {`$ ${epsilonRound(
+                arraySum(
+                  this.context.value.balances
+                    .map((blockchain, i) =>
+                      blockchain.map(
+                        (token, j) =>
+                          token * this.context.value.usdConversion[i][j],
+                      ),
+                    )
+                    .flat(),
+                ),
+                2,
+              )} USD`}
+            </Text>
+          </LinearGradient>
+          <View
+            style={{
+              flexDirection: "row",
+              width: "100%",
+              justifyContent: "space-around",
+              alignItems: "center",
+              marginTop: 20,
+              marginBottom: 10,
             }}
           >
-            <Text style={[GlobalStyles.buttonTextSmall]}>Tokens</Text>
-          </Pressable>
-          <Pressable
-            disabled={this.state.loading}
-            style={[
-              GlobalStyles.buttonSelectorSelectedStyle,
-              this.state.selector !== 1 && {
-                borderColor: "#aaaaaa",
-              },
-            ]}
-            onPress={async () => {
-              this.setState({ selector: 1 });
-            }}
-          >
-            <Text style={[GlobalStyles.buttonTextSmall]}>Receive</Text>
-          </Pressable>
-          <Pressable
-            disabled={this.state.loading}
-            style={[
-              GlobalStyles.buttonSelectorSelectedStyle,
-              this.state.selector !== 2 && {
-                borderColor: "#aaaaaa",
-              },
-            ]}
-            onPress={async () => {
-              this.setState({ selector: 2 });
-            }}
-          >
-            <Text style={[GlobalStyles.buttonTextSmall]}>QR Pay</Text>
-          </Pressable>
+            <Pressable
+              disabled={this.state.loading}
+              style={[
+                GlobalStyles.buttonSelectorSelectedStyle,
+                this.state.selector !== 0 && {
+                  borderColor: "#aaaaaa",
+                },
+              ]}
+              onPress={async () => {
+                this.setState({ selector: 0 });
+              }}
+            >
+              <Text style={[GlobalStyles.buttonTextSmall]}>Tokens</Text>
+            </Pressable>
+            <Pressable
+              disabled={this.state.loading}
+              style={[
+                GlobalStyles.buttonSelectorSelectedStyle,
+                this.state.selector !== 1 && {
+                  borderColor: "#aaaaaa",
+                },
+              ]}
+              onPress={async () => {
+                this.setState({ selector: 1 });
+              }}
+            >
+              <Text style={[GlobalStyles.buttonTextSmall]}>Receive</Text>
+            </Pressable>
+            <Pressable
+              disabled={this.state.loading}
+              style={[
+                GlobalStyles.buttonSelectorSelectedStyle,
+                this.state.selector !== 2 && {
+                  borderColor: "#aaaaaa",
+                },
+              ]}
+              onPress={async () => {
+                this.setState({ selector: 2 });
+              }}
+            >
+              <Text style={[GlobalStyles.buttonTextSmall]}>QR Pay</Text>
+            </Pressable>
+          </View>
         </View>
+
         {this.state.selector === 0 && (
           <Fragment>
             {blockchains.map((blockchain, i) =>
               blockchain.tokens.map((token, j) => (
-                <View key={`${i}${j}`} style={GlobalStyles.network}>
+                <View
+                  key={`${i}${j}`}
+                  style={[GlobalStyles.network, { width: "90%" }]}
+                >
                   <View
                     style={{
                       flexDirection: "row",
@@ -382,17 +368,17 @@ class Tab1 extends Component {
                           {this.context.value.balances[i][j] === 0
                             ? "0"
                             : this.context.value.balances[i][j] < 0.001
-                            ? "<0.001"
-                            : epsilonRound(
-                                this.context.value.balances[i][j],
-                                3
-                              )}{" "}
+                              ? "<0.001"
+                              : epsilonRound(
+                                  this.context.value.balances[i][j],
+                                  3,
+                                )}{" "}
                           {token.symbol}
                         </Text>
                         <Text style={GlobalStyles.networkTokenData}>
                           {`  -  ($${epsilonRound(
                             this.context.value.usdConversion[i][j],
-                            4
+                            4,
                           )} USD)`}
                         </Text>
                       </View>
@@ -404,13 +390,13 @@ class Tab1 extends Component {
                       {epsilonRound(
                         this.context.value.balances[i][j] *
                           this.context.value.usdConversion[i][j],
-                        2
+                        2,
                       )}{" "}
                       USD
                     </Text>
                   </View>
                 </View>
-              ))
+              )),
             )}
           </Fragment>
         )}
@@ -418,74 +404,89 @@ class Tab1 extends Component {
           <Fragment>
             <View
               style={{
-                width: "90%",
-                height: "auto",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <QrAddress address={this.context.value.address} />
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-start",
-                alignItems: "center",
                 width: "100%",
-                gap: 10,
-                paddingBottom: 20,
+                flex: 1,
+                justifyContent: "space-around",
+                alignItems: "center",
               }}
             >
-              <Text
+              <QrAddress
+                address={completeStarknetAddress(this.context.value.address)}
+              />
+              <View
                 style={{
-                  fontSize: normalizeFontSize(22),
-                  fontWeight: "bold",
-                  color: "white",
-                  textAlign: "center",
-                  width: "85%",
+                  flexDirection: "row",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  width: "100%",
+                  gap: 10,
+                  paddingBottom: 20,
                 }}
               >
-                {this.context.value.address !== "" &&
-                  this.context.value.address.substring(
-                    0,
-                    Math.floor(this.context.value.address.length * (1 / 3))
-                  ) +
-                    "\n" +
-                    this.context.value.address.substring(
-                      this.context.value.address.length * (1 / 3),
-                      Math.floor(this.context.value.address.length * (2 / 3))
+                <Text
+                  style={{
+                    fontSize: normalizeFontSize(22),
+                    fontWeight: "bold",
+                    color: "white",
+                    textAlign: "center",
+                    width: "85%",
+                  }}
+                >
+                  {completeStarknetAddress(this.context.value.address) !== "" &&
+                    completeStarknetAddress(
+                      this.context.value.address,
+                    ).substring(
+                      0,
+                      Math.floor(
+                        completeStarknetAddress(this.context.value.address)
+                          .length *
+                          (1 / 3),
+                      ),
                     ) +
-                    "\n" +
-                    this.context.value.address.substring(
-                      Math.floor(this.context.value.address.length * (2 / 3)),
-                      this.context.value.address.length
-                    )}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  Clipboard.setString(this.context.value.address);
-                  if (Platform.OS === "web") {
-                    Toast.show({
-                      type: "info",
-                      text1: "Address copied to clipboard",
-                      position: "bottom",
-                      visibilityTime: 3000,
-                      autoHide: true,
-                    });
-                  } else {
+                      "\n" +
+                      completeStarknetAddress(
+                        this.context.value.address,
+                      ).substring(
+                        completeStarknetAddress(this.context.value.address)
+                          .length *
+                          (1 / 3),
+                        Math.floor(
+                          completeStarknetAddress(this.context.value.address)
+                            .length *
+                            (2 / 3),
+                        ),
+                      ) +
+                      "\n" +
+                      completeStarknetAddress(
+                        this.context.value.address,
+                      ).substring(
+                        Math.floor(
+                          completeStarknetAddress(this.context.value.address)
+                            .length *
+                            (2 / 3),
+                        ),
+                        completeStarknetAddress(this.context.value.address)
+                          .length,
+                      )}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    Clipboard.setString(
+                      completeStarknetAddress(this.context.value.address),
+                    );
                     ToastAndroid.show(
                       "Address copied to clipboard",
-                      ToastAndroid.LONG
+                      ToastAndroid.LONG,
                     );
-                  }
-                }}
-                style={{
-                  width: "15%",
-                  alignItems: "flex-start",
-                }}
-              >
-                <IconIonicons name="copy" size={30} color={"white"} />
-              </Pressable>
+                  }}
+                  style={{
+                    width: "15%",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <IconIonicons name="copy" size={30} color={"white"} />
+                </Pressable>
+              </View>
             </View>
           </Fragment>
         )}
@@ -494,8 +495,8 @@ class Tab1 extends Component {
             {this.state.qrData === "" ? (
               <View
                 style={{
-                  flex: 1,
                   width: "100%",
+                  flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
@@ -515,15 +516,15 @@ class Tab1 extends Component {
               </View>
             ) : (
               <Fragment>
-                <Text style={GlobalStyles.formTitleCard}>Payment QR</Text>
                 <View
                   style={{
-                    width: "90%",
-                    height: "auto",
-                    justifyContent: "center",
+                    width: "100%",
+                    flex: 1,
+                    justifyContent: "space-evenly",
                     alignItems: "center",
                   }}
                 >
+                  <Text style={GlobalStyles.formTitleCard}>Payment QR</Text>
                   <QrAddress address={this.state.qrData} />
                 </View>
               </Fragment>

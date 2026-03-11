@@ -1,5 +1,4 @@
 import { ContextProvider } from "@/src/providers/contextModule";
-import SmartProvider from "@/src/providers/smartProvider";
 import {
   Exo2_400Regular,
   Exo2_700Bold,
@@ -11,18 +10,32 @@ import "react-native-reanimated";
 import ContextLoader from "../providers/contextLoader";
 
 import React from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+const defaultHandler = ErrorUtils.getGlobalHandler();
+
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  // Send error to logger or external service, e.g. Sentry or Bugsnag
+  console.error(error, isFatal);
+  // You can show a custom alert/modal here if you want
+  defaultHandler(error, isFatal);
+});
 
 export default function RootLayout() {
-  useFonts({
+  let [fontsLoaded] = useFonts({
     Exo2_400Regular,
     Exo2_700Bold,
   });
+
+  if (!fontsLoaded) {
+    return null;
+  }
   return (
     <React.Fragment>
       {
-        // This provider put a phone frame around the app if the app is running on a desktop
+        // This provider provides safe area insets
       }
-      <SmartProvider>
+      <SafeAreaProvider>
         {
           // This provider provides the context to the app
         }
@@ -57,7 +70,7 @@ export default function RootLayout() {
           </Stack>
           <StatusBar style="auto" />
         </ContextProvider>
-      </SmartProvider>
+      </SafeAreaProvider>
     </React.Fragment>
   );
 }

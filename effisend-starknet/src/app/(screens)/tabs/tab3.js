@@ -1,20 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { formatUnits } from "ethers";
-import { Contract } from "starknet";
 import { LinearGradient } from "expo-linear-gradient";
-import { abiERC20 } from "../../../contracts/erc20";
 import React, { Fragment, useCallback, useEffect } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { blockchains } from "../../../core/constants";
+import { Contract } from "starknet";
+import { getRewards } from "../../../api/getRewards";
+import { abiERC20 } from "../../../contracts/erc20";
 import GlobalStyles from "../../../core/styles";
 import { getEncryptedStorageValue, setupProvider } from "../../../core/utils";
 import ContextModule from "../../../providers/contextModule";
+import { blockchains } from "../../../core/constants";
 
 function generateColors(publicKey, count = 3) {
   if (!publicKey || publicKey.trim() === "") {
@@ -61,7 +62,7 @@ export default function Tab3() {
   const [trustScore, setTrustScore] = React.useState(0);
   const [rewardPoints, setRewardPoints] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
-  const provider = setupProvider(process.env.EXPO_PUBLIC_RPC);
+  const provider = setupProvider(blockchains[0].rpc);
   const contract = new Contract(
     abiERC20,
     "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D",
@@ -84,27 +85,15 @@ export default function Tab3() {
     setRewardPoints(Number(formatUnits(rewards, 18)));
   }, [setRewardPoints, setTrustScore, context, contract]);
 
-  async function getRewards() {
+  async function getRewardsCaller() {
     const user = await getEncryptedStorageValue("user");
-    let raw = JSON.stringify({
+    console.log(user);  
+    let raw = {
       user,
-    });
-    return new Promise((resolve) => {
-      const myHeaders = new Headers();
-      myHeaders.append("Content-Type", "application/json");
+    };
 
-      const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow",
-      };
-
-      fetch("/api/getRewards", requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result))
-        .catch(() => resolve(null));
-    });
+    const res = await getRewards(raw);
+    return res;
   }
 
   const onMountCheck = useCallback(async () => {
@@ -124,24 +113,32 @@ export default function Tab3() {
   }, []);
 
   const handleRewardPoints = async () => {
-    setLoading(true);
-    const { res } = await getRewards();
-    if (res.error === "BAD REQUEST") {
+    try {
+      setLoading(true);
+      const { res } = await getRewardsCaller();
+      console.log(res);
+      if (res.error === "BAD REQUEST") {
+        setLoading(false);
+      } else {
+        await provider.waitForTransaction(res.hash);
+        await getAllocatedRewards();
+        setLoading(false);
+      }
+    } catch (err) {
       setLoading(false);
-    } else {
-      await provider.waitForTransaction(res.hash);
-      await getAllocatedRewards();
-      setLoading(false);
+      console.log(err);
     }
   };
   return (
     <Fragment>
       <View style={GlobalStyles.main}>
         <ScrollView
-          style={GlobalStyles.content}
+          style={[GlobalStyles.scrollContainer, { width: "90%" }]}
           contentContainerStyle={{
-            justifyContent: "space-between",
+            justifyContent: "center",
             alignItems: "center",
+            width: "100%",
+            paddingBottom: 40,
           }}
           showsVerticalScrollIndicator={false}
         >
@@ -170,7 +167,7 @@ export default function Tab3() {
                 : "Not Joined"}
             </Text>
           </View>
-          <View style={GlobalStyles.verificationSection}>
+          <View style={[GlobalStyles.verificationSection, { width: "60%" }]}>
             <View style={GlobalStyles.verificationBadge}>
               <Ionicons name="checkmark" size={20} color="#ffffff" />
             </View>
@@ -317,7 +314,7 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     backgroundColor: "#1a1a1a",
-    width: "90%",
+    width: "100%",
     borderRadius: 16,
     padding: 20,
     marginTop: 16,

@@ -1,7 +1,41 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RpcProvider } from "starknet";
 import * as EncryptedStorage from "expo-secure-store";
-import { Dimensions, PixelRatio, Platform } from "react-native";
+import { Dimensions, PixelRatio } from "react-native";
+import { RpcProvider } from "starknet";
+
+import * as Crypto from "expo-crypto";
+
+export function completeStarknetAddress(addr) {
+  // Ensure starts with '0x' and remove it for processing
+  if (addr.startsWith("0x")) addr = addr.slice(2);
+  // Remove any spaces
+  addr = addr.trim();
+  // Pad if shorter than 64 chars, trim from the left if longer
+  if (addr.length > 64) {
+    addr = addr.slice(addr.length - 64); // keep rightmost 64
+  }
+  if (addr.length < 64) {
+    addr = addr.padStart(64, "0"); // pad with zeros on the left
+  }
+  return "0x" + addr;
+}
+
+// Function to generate random bytes and return as a Buffer or Uint8Array
+export const randomBytes = async (byteCount) => {
+  try {
+    // getRandomValues works with a TypedArray, like Uint8Array
+    const randomBytes = Crypto.getRandomValues(new Uint8Array(byteCount));
+
+    // If you need a Node.js-style Buffer, you can convert it
+    // return Buffer.from(randomBytes);
+
+    // Otherwise, you can use the Uint8Array directly
+    return randomBytes;
+  } catch (error) {
+    console.error("Error generating random bytes:", error);
+    throw error;
+  }
+};
 
 export async function getAsyncStorageValue(label) {
   try {
@@ -156,10 +190,6 @@ export function setupProvider(nodeUrl) {
 
 export const normalizeFontSize = (size) => {
   let { width, height } = Dimensions.get("window");
-  if (Platform.OS === "web" && height / width < 1) {
-    width /= 2.3179;
-    height *= 0.7668;
-  }
   const scale = Math.min(width / 375, height / 667); // Based on a standard screen size
   return PixelRatio.roundToNearestPixel(size * scale);
 };

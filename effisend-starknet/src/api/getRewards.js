@@ -9,17 +9,11 @@ async function getRewards(body) {
     redirect: "follow",
   };
   return new Promise((resolve) => {
-    fetch(`${process.env.CLAIM_REWARDS_API}`, requestOptions)
+    fetch(`${process.env.EXPO_PUBLIC_CLAIM_REWARDS_API}`, requestOptions)
       .then((response) => response.json())
       .then((result) => resolve(result))
       .catch(() => resolve(null));
   });
 }
 
-export async function POST(request) {
-  const body = await request.json();
-  console.log(body)
-  const result = await getRewards(body);
-  console.log(result);
-  return Response.json({ ...result });
-}
+export { getRewards };

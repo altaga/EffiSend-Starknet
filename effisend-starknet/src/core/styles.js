@@ -1,17 +1,12 @@
 import {
   Dimensions,
   PixelRatio,
-  Platform,
   StatusBar,
-  StyleSheet,
+  StyleSheet
 } from "react-native";
 
 const normalizeFontSize = (size) => {
   let { width, height } = Dimensions.get("window");
-  if (Platform.OS === "web" && height / width < 1) {
-    width /= 2.3179;
-    height *= 0.7668;
-  }
   const scale = Math.min(width / 375, height / 667); // Based on a standard screen size
   return PixelRatio.roundToNearestPixel(size * scale);
 };
@@ -47,14 +42,15 @@ const GlobalStyles = StyleSheet.create({
   },
   scrollContainer: {
     width: "100%",
-    height: "auto",
+    height: "100%",
   },
   scrollContainerContent: {
-    height: "100%",
+    height: "auto",
     width: "100%",
     justifyContent: "space-evenly",
     alignItems: "center",
     gap: 20,
+    paddingBottom: 10,
   },
   // Tab 2
   header: {

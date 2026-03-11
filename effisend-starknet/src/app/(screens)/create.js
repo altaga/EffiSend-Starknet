@@ -1,17 +1,17 @@
-import { randomBytes, uuidV4 } from "ethers";
-import {
-  useNavigation
-} from "expo-router";
+import { uuidV4 } from "ethers";
+import { useNavigation } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, ToastAndroid, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Toast } from "toastify-react-native";
+import { createOrFetchFace } from "../../api/createOrFetchFace";
+import { createOrFetchWallet } from "../../api/createOrFetchWallet";
 import CamFace from "../../components/camFace";
 import GlobalStyles, { mainColor, secondaryColor } from "../../core/styles";
 import { useStateAsync } from "../../core/useAsyncState";
 import {
-  setAsyncStorageValue,
-  setEncryptedStorageValue,
+    randomBytes,
+    setAsyncStorageValue,
+    setEncryptedStorageValue,
 } from "../../core/utils";
 import ContextModule from "../../providers/contextModule";
 
@@ -31,91 +31,58 @@ export default function createOrRecover() {
     };
     context.value.starter && update();
   }, [context.value.address, context.value.starter, navigation.navigate]);
-
-  // Functions
-  const createOrFetchFace = useCallback(async (image, nonce) => {
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    const raw = JSON.stringify({
-      nonce,
-      image,
-    });
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-    return new Promise((resolve) => {
-      fetch(`/api/createOrFetchFace`, requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result))
-        .catch(() => resolve({ result: null, error: "BAD REQUEST" }));
-    });
-  }, []);
-
-  const createOrFetchWallet = useCallback(async (user) => {
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    const raw = JSON.stringify({
-      user,
-    });
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-    return new Promise((resolve) => {
-      fetch(`/api/createOrFetchWallet`, requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result))
-        .catch(() => resolve({ result: null, error: "BAD REQUEST" }));
-    });
-  }, []);
-
+  
   const createWallet = useCallback(async (image) => {
-    setLoading(true);
-    const bytes = randomBytes(16);
-    const nonce = `face_${uuidV4(bytes)}`;
-    const { result: faceResult } = await createOrFetchFace(image, nonce);
-    if (faceResult === null) {
-      setLoading(false);
-    } else {
-      if (typeof faceResult === "string") {
-        const { result: walletResult } = await createOrFetchWallet(faceResult);
-        if (walletResult !== null) {
-          const { user, address } = walletResult;
-          await setEncryptedStorageValue({ user });
-          await setAsyncStorageValue({ address });
-          await context.setValueAsync({
-            address,
+    try {
+      const bytes = await randomBytes(16);
+      const nonce = `face_${uuidV4(bytes)}`;
+      const { result: faceResult } = await createOrFetchFace({ image, nonce });
+      if (faceResult === null) {
+        setLoading(false);
+      } else {
+        if (typeof faceResult === "string") {
+          const { result: walletResult } = await createOrFetchWallet({
+            user: faceResult,
           });
-          navigation.navigate("(screens)/main");
-        }
-      } else if (typeof faceResult === "boolean" && faceResult === true) {
-        const { result: walletResult } = await createOrFetchWallet(nonce);
-        console.log(walletResult);
-        if (walletResult !== null) {
-          const { user, address } = walletResult;
-          await setEncryptedStorageValue({ user });
-          await setAsyncStorageValue({ address });
-          await context.setValueAsync({
-            address,
+          if (walletResult !== null) {
+            const { user, address } = walletResult;
+            await setEncryptedStorageValue({ user });
+            await setAsyncStorageValue({ address });
+            await context.setValueAsync({
+              address,
+            });
+            navigation.navigate("(screens)/main");
+            ToastAndroid.show(
+              "You have won STRK tokens because you verified",
+              ToastAndroid.LONG
+            );
+            //setLoading(false);
+          }
+        } else if (typeof faceResult === "boolean" && faceResult === true) {
+          const { result: walletResult } = await createOrFetchWallet({
+            user: nonce,
           });
-          navigation.navigate("(screens)/main");
-          Toast.show({
-            type: "info",
-            text1: "You have won STRK tokens because you verified",
-            text2: "Go to the Effisend ID tab to claim",
-            position: "bottom",
-            visibilityTime: 10000,
-            autoHide: true,
-          });
+          console.log(walletResult);
+          if (walletResult !== null) {
+            const { user, address } = walletResult;
+            await setEncryptedStorageValue({ user });
+            await setAsyncStorageValue({ address });
+            await context.setValueAsync({
+              address,
+            });
+            navigation.navigate("(screens)/main");
+            ToastAndroid.show(
+              "You have won STRK tokens because you verified",
+              ToastAndroid.LONG
+            );
+            //setLoading(false);
+          }
         }
       }
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   return (
@@ -123,7 +90,7 @@ export default function createOrRecover() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={GlobalStyles.scrollContainer}
-        contentContainerStyle={[GlobalStyles.scrollContainerContent]}
+        contentContainerStyle={[GlobalStyles.scrollContainerContent, {height: "100%", justifyContent: "space-evenly"}]}
       >
         <View>
           <Text style={GlobalStyles.title}>FaceID</Text>
@@ -152,12 +119,13 @@ export default function createOrRecover() {
             loading ? { opacity: 0.5 } : {},
           ]}
           onPress={async () => {
+            setLoading(true);
             await setTake(true);
             await setTake(false);
           }}
         >
           <Text style={[GlobalStyles.buttonText]}>
-            {loading ? "Fetching..." : "Join / Recover"}
+            {loading ? "Fetching..." : " Join / Recover "}
           </Text>
         </Pressable>
       </ScrollView>

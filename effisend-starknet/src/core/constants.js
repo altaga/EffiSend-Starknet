@@ -1,18 +1,14 @@
-import { Dimensions, Image, PixelRatio, Platform } from "react-native";
+import { Dimensions, Image, PixelRatio } from "react-native";
 // Blockchain
+import DAI from "../assets/logos/dai.png";
 import ETH from "../assets/logos/eth.png";
 import STRK from "../assets/logos/strk.png";
-import DAI from "../assets/logos/dai.png";
 import USDC from "../assets/logos/usdc.png";
 import USDT from "../assets/logos/usdt.png";
 import WBTC from "../assets/logos/wbtc.png";
 
 const normalizeFontSize = (size) => {
   let { width, height } = Dimensions.get("window");
-  if (Platform.OS === "web" && height / width < 1) {
-    width /= 2.3179;
-    height *= 0.7668;
-  }
   const scale = Math.min(width / 375, height / 667); // Based on a standard screen size
   return PixelRatio.roundToNearestPixel(size * scale);
 };
@@ -43,7 +39,7 @@ export const blockchains = [
   {
     network: "Starknet",
     blockExplorer: "https://voyager.online/",
-    rpc: "https://starknet-rpc.publicnode.com",
+    rpc: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/hvxo_YG7D-gESwdXBI_D_",
     ozAccountClassHash:
       "0x0540d7f5ec7ecf317e68d48564934cb99259781b1ee3cedbbc37ec5337f8e688",
     batchBalancesAddress: "0xcf4902BC621E97B8d574f1E91c342f0c44C8baE5",
@@ -122,12 +118,6 @@ export const blockchains = [
     ],
   },
 ];
-
-export const chains = blockchains.filter((_, index) => index !== 1); // Remove Ethereum, high fees
-
-export const baseWallets = Object.fromEntries(
-  blockchains.map((x) => [x.apiname, { id: "", address: "" }])
-);
 
 // Cloud Account Credentials
 export const CloudAccountController =

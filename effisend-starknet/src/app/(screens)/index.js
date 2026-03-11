@@ -9,19 +9,16 @@ import ContextModule from "../../providers/contextModule";
 export default function SplashLoading() {
   const context = useContext(ContextModule);
   const navigation = useNavigation();
-
-  
-    useEffect(() => {
-      const update = async () => {
-        if (context.value.address === "") {
-          navigation.navigate("(screens)/create");
-        } else {
-          navigation.navigate("(screens)/main");
-        }
-      };
-      context.value.starter && update();
-    }, [context.value.address, context.value.starter, navigation.navigate]);
-  
+  useEffect(() => {
+    const update = async () => {
+      if (context.value.address === "") {
+        navigation.navigate("(screens)/create");
+      } else {
+        navigation.navigate("(screens)/main");
+      }
+    };
+    context.value.starter && update();
+  }, [context.value.address, context.value.starter, navigation.navigate]);
 
   return (
     <View style={[GlobalStyles.container, { justifyContent: "center" }]}>

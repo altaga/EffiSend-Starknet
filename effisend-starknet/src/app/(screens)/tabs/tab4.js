@@ -1,96 +1,118 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import React, { Fragment, useCallback, useRef, useState } from "react";
+import React, {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Image,
+  Keyboard,
+  Linking,
   Pressable,
   ScrollView,
+  Text,
   TextInput,
   View,
-  Text,
-  Linking,
-  Image,
 } from "react-native";
-import GlobalStyles, { mainColor } from "../../../core/styles";
-import { useStateAsync } from "../../../core/useAsyncState";
-import ContextModule from "../../../providers/contextModule";
-import { formatTimestamp, getEncryptedStorageValue } from "../../../core/utils";
-import { fetch } from "expo/fetch";
+import LinearGradient from "react-native-linear-gradient";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { chatWithAgent } from "../../../api/chatWithAgent";
 import GoogleWallet from "../../../assets/images/GW.png";
+import GlobalStyles, { footer, mainColor } from "../../../core/styles";
+import {
+  formatTimestamp,
+  getEncryptedStorageValue,
+  sleep,
+} from "../../../core/utils";
+import ContextModule from "../../../providers/contextModule";
+
+function useKeyboard() {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const onKeyboardDidShow = (e) => setKeyboardHeight(e.endCoordinates.height);
+    const onKeyboardDidHide = () => setKeyboardHeight(0);
+
+    const showSub = Keyboard.addListener("keyboardDidShow", onKeyboardDidShow);
+    const hideSub = Keyboard.addListener("keyboardDidHide", onKeyboardDidHide);
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  return keyboardHeight - footer;
+}
 
 export default function Tab4() {
   const context = React.useContext(ContextModule);
   const scrollView = useRef(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [inputHeight, setInputHeight] = useStateAsync("auto");
-
-  async function chatWithAgent(message) {
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    const user = await getEncryptedStorageValue("user");
-    const raw = JSON.stringify({
-      message,
-      context: {
-        address: context.value.address,
-        user,
-      },
-    });
-
-    const requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-    return new Promise((resolve) => {
-      fetch("/api/chatWithAgent", requestOptions)
-        .then((response) => response.json())
-        .then((result) => resolve(result))
-        .catch(() => resolve(null));
-    });
-  }
+  const [inputHeight, setInputHeight] = useState("auto");
+  const keyboardHeight = useKeyboard();
 
   function responseModifier(response) {
     let temp = response;
-    /**
-      if (temp["last_tool"] === "transfer_to_multiple_spei") {
-        temp.message = "All CLABE accounts received the payment successfully.";
-      }
-    */
+    // Custom modifications, if needed
     return temp;
   }
 
   const sendMessage = useCallback(async () => {
-    setLoading(true);
-    const userMessage = message;
-    setMessage("");
-    let temp = [...context.value.chatGeneral];
-    temp.push({
-      message: userMessage,
-      type: "user",
-      time: Date.now(),
-      tool: "",
-    });
-    await context.setValueAsync({
-      chatGeneral: temp,
-    });
-    scrollView.current.scrollToEnd({ animated: true });
-    const response = await chatWithAgent(message);
-    const finalResponse = responseModifier(response);
-    temp.push({
-      message: finalResponse.message,
-      type: "system",
-      time: Date.now(),
-      tool: response["last_tool"],
-    });
-    console.log(temp);
-    context.setValue({
-      chatGeneral: temp,
-    });
-    setLoading(false);
-    setTimeout(() => scrollView.current.scrollToEnd({ animated: true }), 100);
-  }, [scrollView, context, message, setMessage, setLoading]);
+    try {
+      setLoading(true);
+      const userMessage = message;
+      setMessage(""); // clear input
+      let temp = [...context.value.chatGeneral];
+      temp = [
+        ...temp,
+        {
+          message: userMessage,
+          type: "user",
+          time: Date.now(),
+          tool: "",
+        },
+      ];
+      await context.setValueAsync({
+        chatGeneral: temp,
+      });
+      await sleep(100);
+      scrollView.current.scrollToEnd({ animated: true });
+      const user = await getEncryptedStorageValue("user");
+      const { address } = context.value;
+      const response = await chatWithAgent({
+        message,
+        context: { user, address },
+      });
+      const finalResponse = responseModifier(response);
+      temp = [
+        ...temp,
+        {
+          message: finalResponse.message,
+          type: "system",
+          time: Date.now(),
+          tool: response["last_tool"],
+        },
+      ];
+      await context.setValueAsync({
+        chatGeneral: temp,
+      });
+      await sleep(100);
+      scrollView.current.scrollToEnd({ animated: true });
+      setLoading(false);
+    } catch (err) {
+      console.log(err);
+    }
+  }, [
+    scrollView,
+    context.value,
+    context.setValueAsync,
+    message,
+    setMessage,
+    setLoading,
+  ]);
 
   return (
     <Fragment>
@@ -151,7 +173,7 @@ export default function Tab4() {
                 }}
                 onPress={() => {
                   Linking.openURL(
-                    "intent://com.google.android.apps.walletnfcrel/#Intent;scheme=android-app;package=com.google.android.apps.walletnfcrel;end"
+                    "intent://com.google.android.apps.walletnfcrel/#Intent;scheme=android-app;package=com.google.android.apps.walletnfcrel;end",
                   );
                 }}
               >
@@ -186,8 +208,8 @@ export default function Tab4() {
             height: "auto",
             width: "94%",
             flexDirection: "row",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
+            alignItems: "center",
+            justifyContent: "space-around",
             marginVertical: 10,
           },
         ]}
@@ -197,9 +219,9 @@ export default function Tab4() {
           onChange={() => scrollView.current.scrollToEnd({ animated: true })}
           onFocus={() => scrollView.current.scrollToEnd({ animated: true })}
           multiline
-          onContentSizeChange={async (event) => {
+          onContentSizeChange={(event) => {
             if (event.nativeEvent.contentSize.height < 120) {
-              await setInputHeight(event.nativeEvent.contentSize.height);
+              setInputHeight(event.nativeEvent.contentSize.height);
               scrollView.current.scrollToEnd({ animated: true });
             }
           }}
@@ -225,7 +247,7 @@ export default function Tab4() {
               backgroundColor: mainColor,
               borderRadius: 50,
               aspectRatio: 1,
-              padding: 20,
+              padding: 6,
             },
             message.length <= 0 || loading ? { opacity: 0.5 } : {},
           ]}
@@ -237,6 +259,8 @@ export default function Tab4() {
           )}
         </Pressable>
       </View>
+      {/* this spacer view will push up your input so it's never overlapped by the keyboard */}
+      <View style={{ height: keyboardHeight }} />
     </Fragment>
   );
 }

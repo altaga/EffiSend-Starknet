@@ -1,7 +1,6 @@
-import { fetch } from "expo/fetch";
-
-async function createPayment(body) {
+async function chatWithAgent(body) {
   const myHeaders = new Headers();
+  myHeaders.append("X-API-Key", process.env.EXPO_PUBLIC_AI_URL_API_KEY);
   myHeaders.append("Content-Type", "application/json");
   const raw = JSON.stringify(body);
   const requestOptions = {
@@ -11,15 +10,11 @@ async function createPayment(body) {
     redirect: "follow",
   };
   return new Promise((resolve) => {
-    fetch(`${process.env.CREATE_PAYMENT_URL_API}`, requestOptions)
+    fetch(`${process.env.EXPO_PUBLIC_AGENT_URL_API}`, requestOptions)
       .then((response) => response.json())
       .then((result) => resolve(result))
       .catch(() => resolve(null));
   });
 }
 
-export async function POST(request) {
-  const body = await request.json();
-  const result = await createPayment(body);
-  return Response.json({ result });
-}
+export { chatWithAgent };

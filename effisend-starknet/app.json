@@ -1,50 +1,50 @@
 {
   "expo": {
-    "name": "effisend-starknet",
-    "slug": "effisend-starknet",
-    "version": "1.0.0",
+    "name": "Effisend",
+    "slug": "Effisend",
+    "version": "1.0.4",
     "orientation": "portrait",
-    "icon": "./src/assets/images/logo.png",
-    "scheme": "effisendmeta",
+    "icon": "./src/assets/images/logoCenter.png",
+    "scheme": "effisend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.altaga.effisend.starknet",
+      "versionCode": 5,
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./src/assets/images/logoCenter.png"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.altaga.effisenda.starknet"
     },
     "web": {
-      "bundler": "metro",
-      "output": "server",
-      "favicon": "./src/assets/images/logo.png"
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./scripts/withAndroidBuildFixes.js",
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./src/assets/images/splash-icon.png",
+          "image": "./src/assets/images/logoR.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "57b1b532-5f61-4e08-ba21-d91b9cf76df5"
-      }
-    },
-    "owner": "altaga"
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
   }
 }
